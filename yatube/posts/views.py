@@ -1,20 +1,25 @@
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import CommentForm, PostForm
-from .models import Comment, Group, Post, User
+from .models import Comment, Follow, Group, Post, User
 
 
 def index(request):
     template = 'posts/index.html'
-    posts = Post.objects.all()
+    posts = cache.get('index_page')
+    if posts is None:
+        posts = Post.objects.all()
+        cache.set('index_page', posts, timeout=20)
     paginator = Paginator(posts, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     context = {
-        'page_obj': page_obj
+        'page_obj': page_obj,
+        'index': True
     }
     return render(request, template, context)
 
@@ -34,8 +39,14 @@ def group_list(request, slug):
 
 
 def profile(request, username):
-
     author = get_object_or_404(User, username=username)
+    current_user = request.user
+
+    if current_user.is_authenticated:
+        following = current_user.follower.filter(author=author).exists()
+    else:
+        following = False
+
     posts = Post.objects.filter(author=author.id)
     posts_count = posts.count()
 
@@ -46,7 +57,8 @@ def profile(request, username):
     context = {
         'author': author,
         'page_obj': page_obj,
-        'posts_count': posts_count
+        'posts_count': posts_count,
+        'following': following
     }
 
     return render(request, 'posts/profile.html', context)
@@ -129,19 +141,63 @@ def post_edit(request, post_id):
 
 @login_required
 def follow_index(request):
-    # информация о текущем пользователе доступна в переменной request.user
-    # ...
-    context = {}
+    posts = Post.objects.filter(author__following__user=request.user)
+    paginator = Paginator(posts, settings.POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'follow': True
+    }
+
     return render(request, 'posts/follow.html', context)
 
 
 @login_required
 def profile_follow(request, username):
-    # Подписаться на автора
-    pass
+    author = get_object_or_404(User, username=username)
+    is_following_exists = Follow.objects.filter(author=author).exists()
+    if author != request.user and not is_following_exists:
+        Follow.objects.create(user=request.user, author=author)
+    author = get_object_or_404(User, username=username)
+    following = request.user.follower.filter(author=author).exists()
+
+    posts = Post.objects.filter(author=author.id)
+    posts_count = posts.count()
+    paginator = Paginator(posts, settings.POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'author': author,
+        'page_obj': page_obj,
+        'posts_count': posts_count,
+        'following': following
+    }
+
+    return render(request, 'posts/profile.html', context)
 
 
 @login_required
 def profile_unfollow(request, username):
-    # Дизлайк, отписка
-    pass
+    author = get_object_or_404(User, username=username)
+    Follow.objects.filter(user=request.user, author=author).delete()
+
+    author = get_object_or_404(User, username=username)
+    following = request.user.follower.filter(author=author).exists()
+
+    posts = Post.objects.filter(author=author.id)
+    posts_count = posts.count()
+    paginator = Paginator(posts, settings.POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'author': author,
+        'page_obj': page_obj,
+        'posts_count': posts_count,
+        'following': following
+    }
+
+    return render(request, 'posts/profile.html', context)

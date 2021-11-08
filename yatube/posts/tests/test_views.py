@@ -10,7 +10,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Group, Post
+from ..models import Follow, Group, Post
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -25,6 +25,7 @@ class PostViewsTests(TestCase):
         super().setUpClass()
         cls.user1 = User.objects.create_user(username='TestUser1')
         cls.user2 = User.objects.create_user(username='TestUser2')
+        cls.user3 = User.objects.create_user(username='TestUser3')
         cls.group0 = Group.objects.create(
             title='Тестовая группа',
             slug='group0',
@@ -84,7 +85,9 @@ class PostViewsTests(TestCase):
 
     def setUp(self):
         self.authorized_user = Client()
+        self.authorized_user3 = Client()
         self.authorized_user.force_login(self.user1)
+        self.authorized_user3.force_login(self.user3)
 
     def test_pages_uses_correct_templates(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -217,6 +220,42 @@ class PostViewsTests(TestCase):
                     f'указанного класса.'
                 )
 
+    def test_follow_only_by_authorized(self):
+        """Подписаться на авторов может только авторизованный пользователь."""
+        follows_count = Follow.objects.filter(user=self.user1).count()
+        self.authorized_user.get(reverse('posts:profile_follow',
+                                 kwargs={'username': self.user2.username}))
+        follows_count_after = Follow.objects.filter(user=self.user1).count()
+        self.assertEqual(follows_count_after, follows_count + 1)
+
+    def test_new_follow_viewed_only_by_follower(self):
+        """Новые посты автора появляются в ленте только у подписчика."""
+        following_user_posts_count = Post.objects.filter(
+            author=self.user2.id).count()
+
+        self.authorized_user.get(reverse('posts:profile_follow',
+                                 kwargs={'username': self.user2.username}))
+
+        Post.objects.create(
+            text='Тест подписки.',
+            author=self.user2,
+            group=self.group1
+        )
+
+        response_follower = self.authorized_user.get(
+            reverse('posts:follow_index'))
+        response_nofollower = self.authorized_user3.get(
+            reverse('posts:follow_index'))
+
+        posts_list_lentgh_follower = len(
+            response_follower.context['page_obj'])
+        posts_list_lentgh_nofollower = len(
+            response_nofollower.context['page_obj'])
+
+        self.assertEqual(posts_list_lentgh_follower,
+                         following_user_posts_count + 1)
+        self.assertEqual(posts_list_lentgh_nofollower, 0)
+
 
 class PaginatorViewsTest(TestCase):
 
@@ -241,8 +280,10 @@ class PaginatorViewsTest(TestCase):
 
     def setUp(self):
         self.unauthorized_user = Client()
+        cache.clear()
 
     def test_first_page_contains_ten_records(self):
+        """Паджинатор. Первая страница содержит 10 записей."""
         response = self.client.get(reverse('posts:index'))
         self.assertEqual(
             len(response.context['page_obj']), settings.POSTS_PER_PAGE)
@@ -256,6 +297,7 @@ class PaginatorViewsTest(TestCase):
             len(response.context['page_obj']), settings.POSTS_PER_PAGE)
 
     def test_second_page_contains_three_records(self):
+        """Паджинатор. Вторая страница содержит 3 записи."""
         page_number = 2
         posts_on_current_page = 3
         response = self.client.get(

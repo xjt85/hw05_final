@@ -1,11 +1,9 @@
 {% extends 'base.html' %}
-{% load cache %}
 {% load thumbnail %}
-{% block title %}Последние обновления на сайте{% endblock %}
+{% block title %}Подписки на авторов{% endblock %}
 {% block content %}
-  <h1>Последние обновления на сайте</h1>
+  <h1>Подписки на авторов</h1>
   {% include 'posts/includes/switcher.html' %}
-  {% cache 0 index_page %}
   {% for post in page_obj %}
     <article>
       <ul>
@@ -28,6 +26,5 @@
     {% endif %}
     {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
-  {% endcache %} 
   {% include 'posts/includes/paginator.html' %}
 {% endblock %}
