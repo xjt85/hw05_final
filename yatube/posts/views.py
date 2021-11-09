@@ -12,7 +12,7 @@ def index(request):
     template = 'posts/index.html'
     posts = cache.get('index_page')
     if posts is None:
-        posts = Post.objects.all() # замечание 1. Использовать select_related()
+        posts = Post.objects.select_related('group')
         cache.set('index_page', posts, timeout=20)
     paginator = Paginator(posts, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
@@ -157,9 +157,8 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    is_following_exists = Follow.objects.filter(author=author).exists()
-    if author != request.user and not is_following_exists:  # замечание 2. Использовать get_or_create()
-        Follow.objects.create(user=request.user, author=author)
+    if author != request.user:
+        Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('posts:profile', username)
 
 

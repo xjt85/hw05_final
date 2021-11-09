@@ -14,6 +14,10 @@ class Group(models.Model):
     def __str__(self):
         return self.title
 
+    class Meta:
+        verbose_name = 'Группа'
+        verbose_name_plural = 'Группы'
+
 
 class Post(models.Model):
     text = models.TextField()
@@ -82,9 +86,14 @@ class Follow(models.Model):
         related_name='following'
     )
 
+    def __str__(self):
+        return f'Подписка {self.user.username} на {self.author.username}'
+
     class Meta:
         constraints = [
             UniqueConstraint(
                 fields=['user', 'author'], name='unique_following'
             ),
         ]
+        verbose_name = 'Подписка на автора'
+        verbose_name_plural = 'Подписки на авторов'
