@@ -12,7 +12,7 @@ def index(request):
     template = 'posts/index.html'
     posts = cache.get('index_page')
     if posts is None:
-        posts = Post.objects.all()
+        posts = Post.objects.all() # замечание 1. Использовать select_related()
         cache.set('index_page', posts, timeout=20)
     paginator = Paginator(posts, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
@@ -158,46 +158,13 @@ def follow_index(request):
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     is_following_exists = Follow.objects.filter(author=author).exists()
-    if author != request.user and not is_following_exists:
+    if author != request.user and not is_following_exists:  # замечание 2. Использовать get_or_create()
         Follow.objects.create(user=request.user, author=author)
-    author = get_object_or_404(User, username=username)
-    following = request.user.follower.filter(author=author).exists()
-
-    posts = Post.objects.filter(author=author.id)
-    posts_count = posts.count()
-    paginator = Paginator(posts, settings.POSTS_PER_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        'author': author,
-        'page_obj': page_obj,
-        'posts_count': posts_count,
-        'following': following
-    }
-
-    return render(request, 'posts/profile.html', context)
+    return redirect('posts:profile', username)
 
 
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     Follow.objects.filter(user=request.user, author=author).delete()
-
-    author = get_object_or_404(User, username=username)
-    following = request.user.follower.filter(author=author).exists()
-
-    posts = Post.objects.filter(author=author.id)
-    posts_count = posts.count()
-    paginator = Paginator(posts, settings.POSTS_PER_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        'author': author,
-        'page_obj': page_obj,
-        'posts_count': posts_count,
-        'following': following
-    }
-
-    return render(request, 'posts/profile.html', context)
+    return redirect('posts:profile', username)
