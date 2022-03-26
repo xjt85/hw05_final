@@ -28,7 +28,10 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost',
                  '127.0.0.1',
                  '[::1]',
-                 'testserver', ]
+                 'testserver',
+                 'www.xjt.pythonanywhere.com',
+                 'xjt.pythonanywhere.com'
+                 ]
 
 
 # Application definition

@@ -268,15 +268,21 @@ class PaginatorViewsTest(TestCase):
             slug='group0',
             description='Группа 0',
         )
-        cls.posts = []
-        for i in range(13):
-            cls.posts.append(Post(
-                text='Текст тестового поста.',
-                author=cls.user1,
-                group=cls.group0
-            ))
+        # cls.posts = []
+        # for i in range(13):
+        #     cls.posts.append(Post(
+        #         text='Текст тестового поста.',
+        #         author=cls.user1,
+        #         group=cls.group0
+        #     ))
 
-        Post.objects.bulk_create(cls.posts)
+        # Post.objects.bulk_create(cls.posts)
+        cls.posts = Post.objects.bulk_create(Post(
+            text='Текст тестового поста.',
+            author=cls.user1,
+            group=cls.group0
+        )
+            for i in range(13))
 
     def setUp(self):
         self.unauthorized_user = Client()
