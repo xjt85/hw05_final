@@ -1,9 +1,36 @@
-# The YATUBE Project
+# THE YATUBE project
+## _Social network_
+
+Project of social newwork for blog publications.
+
+## Features
+
+
+## Tech
+
+Python3, Django, Git, Unittest, SQLite
 
 ## Installation
 
-python -m venv venv
+Yatube requires [python](https://nodejs.org/) v3+ to run.
+
+Install the dependencies and devDependencies and start the server.
+
+```python -m venv venv
 source venv/scripts/activate
 pip install -r requirements.txt
+```
 
-[![CI](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml)
+server start...
+
+```python manage.py migrate
+python manage.py check
+python manage.py runserver
+```
+
+## Development
+
+
+## Authors
+
+Roman Chuklinov
