@@ -1,7 +1,7 @@
 # THE YATUBE project
 ## _Social network_
 
-Project of social newwork for blog publications.
+Project of social network for blog publications.
 
 ## Features
 
